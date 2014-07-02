@@ -2,7 +2,7 @@
 
 My simple download manager for linux!
 
-Uses `axel` for downloading and accelerating downloads. Uses `zenity` and `gtkdialog` for 
+Uses `axel` for downloading and accelerating downloads. Uses `zenity` and `gtkdialog` for GUI dialogs.
 
 ## Requirements
 
