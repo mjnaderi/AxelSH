@@ -11,7 +11,7 @@ AxelSH needs `zenity` and `gtkdialog` packages.
 Before start, you need to compile my modified version of `axel`:
 
 ```bash
-cd axelsh/axel
+cd axel
 ./configure
 make
 ```
@@ -28,7 +28,6 @@ axelsh LINKS_FILE FINISHED_LINKS_FILE OUTPUT_PATH
 The following command, picks a link from `links` and downloads it to `~/Downloads`, and moves that link from `links` to `finished_links`, and repeats this for all links in `links`.
 
 ```bash
-cd axelsh
 ./axelsh links finished_links ~/Downloads
 ```
 
