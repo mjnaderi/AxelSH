@@ -64,14 +64,17 @@ function parse_dlg() {
 
 			./axel/axel "$link" -o "$OUT"
 
-			if ! ls "$OUT/*.st" &>/dev/null; then # if no st file exists (means download finished)
+			# if no st file exists (means download finished)
+			# TODO: better check
+			if ! ls "$OUT/*.st" &>/dev/null; then
 				# remove first line of LINKS_FILE
 				tail -n +2 "$LINKS_FILE" > axeltmp && mv axeltmp "$LINKS_FILE"
 				# add link to DONE_FILE file
 				echo "$link" >> "$DONE_FILE"
 
 				if $NOTIFY; then
-					notify-send -t 5000 "Download of $link Finished!"
+					# You can uncomment this line to also use notify-send for notification
+					#notify-send -t 5000 "Download of $link Finished!"
 					(
 						mk_dlg 2 "AxelSH: Download Finished" "Download of $link Finished!" "Open Folder" open "OK" ok
 						ans=`parse_dlg`
@@ -79,7 +82,6 @@ function parse_dlg() {
 							xdg-open $OUT
 						fi
 					) &>/dev/null &
-					#zenity --info --text="Download of $link Finished!" &>/dev/null &
 				fi
 			fi
 		done
