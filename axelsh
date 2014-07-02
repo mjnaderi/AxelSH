@@ -1,0 +1,92 @@
+#!/bin/bash
+# AxelSH
+# By Mohammad Javad Naderi <mjnaderi@gmail.com>
+# usage: ./dl NOTIFY(true/false) LINKS_FILE DONE_FILE OUTPUT_FOLDER
+
+trap "exit 1" SIGINT SIGTERM
+
+NOTIFY=$1
+LINKS_FILE=$2
+DONE_FILE=$3
+OUT=$4
+
+# functions mk_dlg and parge_dlg from http://www.pclinuxos.com/forum/index.php?topic=59050.0
+function mk_dlg()
+{
+	N=$1
+	shift
+	export MAIN_DIALOG="
+		<window title=\"$1\" resizable=\"false\" icon-name=\"computer\">
+		<vbox>
+		<text use-markup=\"true\">
+			<label>$2</label>
+		</text>
+		<hbox>"`
+			shift
+			shift
+			for((i=0; i<N; i++)); do
+				echo "<button>
+					<label>$1</label>
+					<action type=\"exit\">$2</action>
+				</button>";
+				shift
+				shift
+			done
+		`"</hbox>
+		</vbox>
+		</window>
+	"
+}
+
+
+function parse_dlg() {
+	I=$IFS; IFS=""
+	for STATEMENT in  $(gtkdialog --center --program=MAIN_DIALOG); do
+		eval $STATEMENT
+	done
+	IFS=$I
+	echo $EXIT
+}
+
+
+# Main
+(
+	(
+		# Main Loop
+	 	while [ `wc -c "$LINKS_FILE" | awk '{print $1}'` != "0" ]; do
+			link=`head -1 "$LINKS_FILE"`
+
+			if [ "$link" == "" ]; then
+				# remove first line from LINKS_FILE
+				tail -n +2 "$LINKS_FILE" > axeltmp && mv axeltmp "$LINKS_FILE"
+				continue
+			fi
+
+			./axel/axel "$link" -o "$OUT"
+
+			if ! ls "$OUT/*.st" &>/dev/null; then # if no st file exists (means download finished)
+				# remove first line of LINKS_FILE
+				tail -n +2 "$LINKS_FILE" > axeltmp && mv axeltmp "$LINKS_FILE"
+				# add link to DONE_FILE file
+				echo "$link" >> "$DONE_FILE"
+
+				if $NOTIFY; then
+					notify-send -t 5000 "Download of $link Finished!"
+					(
+						mk_dlg 2 "AxelSH: Download Finished" "Download of $link Finished!" "Open Folder" open "OK" ok
+						ans=`parse_dlg`
+						if [ $ans == "open" ]; then
+							xdg-open $OUT
+						fi
+					) &>/dev/null &
+					#zenity --info --text="Download of $link Finished!" &>/dev/null &
+				fi
+			fi
+		done
+		echo "#Downloads Finished"
+		echo "100"
+	) & echo $!
+) | (
+	read PIPED_PID;
+	zenity --progress --title="AxelSH" &>/dev/null || kill $PIPED_PID
+) &>/dev/null &
