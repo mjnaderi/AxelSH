@@ -1,14 +1,14 @@
 #!/bin/bash
 # AxelSH
 # By Mohammad Javad Naderi <mjnaderi@gmail.com>
-# usage: ./dl NOTIFY(true/false) LINKS_FILE DONE_FILE OUTPUT_FOLDER
+# usage: ./axelsh LINKS_FILE DONE_FILE OUTPUT_FOLDER
 
 trap "exit 1" SIGINT SIGTERM
 
-NOTIFY=$1
-LINKS_FILE=$2
-DONE_FILE=$3
-OUT=$4
+NOTIFY=true # notify about finishing downloads or not
+LINKS_FILE=$1
+DONE_FILE=$2
+OUT=$3
 
 # functions mk_dlg and parge_dlg from http://www.pclinuxos.com/forum/index.php?topic=59050.0
 function mk_dlg()
