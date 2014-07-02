@@ -309,6 +309,12 @@ int main( int argc, char *argv[] )
 				if( access( string, F_OK ) )
 					break;
 			}
+
+			// comment by mjnaderi
+			// we do not want to download a downloaded file again
+			printf( _("File exists. Exiting...\n") );
+			return 5;
+
 			sprintf( s, ".%i", i );
 			i ++;
 		}
@@ -347,7 +353,7 @@ int main( int argc, char *argv[] )
 		
 		prev = axel->bytes_done;
 		axel_do( axel );
-		
+
 		if( conf->alternate_output )
 		{			
 			if( !axel->message && prev != axel->bytes_done )
@@ -364,18 +370,27 @@ int main( int argc, char *argv[] )
 					i += ( prev / 1024 );
 					if( ( i % 50 ) == 0 )
 					{
-						if( prev >= 1024 )
-							printf( "  [%6.1fKB/s]", (double) axel->bytes_per_second / 1024 );
-						if( axel->size < 10240000 )
-							printf( "\n[%3lld%%]  ", min( 100, 102400 * i / axel->size ) );
+						double percentage;
+						long long intpercentage;
+						if( axel->size < 10240000 ){
+							intpercentage = min( 100, 102400 * i / axel->size );
+							percentage = min( 100, (double)102400 * i / axel->size );
+							printf( "\n%lld\n", intpercentage );
+						}
 						else
-							printf( "\n[%3lld%%]  ", min( 100, i / ( axel->size / 102400 ) ) );
+						{
+							intpercentage = min( 100, i / ( axel->size / 102400 ) );
+							percentage = min( 100, (double)i / ( axel->size / 102400 ) );
+							printf( "\n%lld\n", intpercentage );
+						}
+						if( prev >= 1024 )
+							printf( "\n#Downloading %s\\nSpeed:\\t\\t%.1fKB/s\\nProgress:\\t%.2f%%\n",axel->filename, (double) axel->bytes_per_second / 1024, percentage );
 					}
 					else if( ( i % 10 ) == 0 )
 					{
-						putchar( ' ' );
+						//putchar( ' ' );
 					}
-					putchar( '.' );
+					//putchar( '.' );
 					i -= ( prev / 1024 );
 				}
 				fflush( stdout );
