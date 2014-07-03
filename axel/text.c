@@ -26,12 +26,9 @@
 #include "axel.h"
 
 static void stop( int signal );
-static char *size_human( long long int value );
 static void my_human_time(char*, int);
 static void my_human_size(char*, long long);
-static char *time_human( int value );
 static void print_commas( long long int bytes_done );
-static void print_alternate_output( axel_t *axel );
 static void print_help();
 static void print_version();
 static void print_messages( axel_t *axel );
@@ -350,14 +347,16 @@ int main( int argc, char *argv[] )
 	signal( SIGTERM, stop );
 
 	char total_size[20];
-	strcpy(total_size, size_human(axel->size));
+	my_human_size(total_size, axel->size);
 
 	int tm[300], pr[300];
 	int tmi = 0;
 	char tmfull = 0;
 
+	char dl[30], elt[30], remt[30], spd[40];
+
 	
-	while( !axel->ready && run )
+	while( ! axel->ready && run )
 	{
 		long long int prev, done;
 		
@@ -389,19 +388,17 @@ int main( int argc, char *argv[] )
 			
 			if( prev >= 1024 ){
 				
-				char dl[30];
 				my_human_size(dl, axel->bytes_done);
 
 				double avg_speed = (double) axel->bytes_per_second / 1024;
 
 				// elapsed time
 				int dt = gettime() - axel->start_time;
-				char elt[30];
 				my_human_time(elt, dt);
 
 				// remaining time
-				char remt[30] = "--";
-				char spd[40] = "--";
+				strcpy(remt, "--");
+				strcpy(spd, "--");
 				if (tmfull){
 					// now_speed
 					int lastdt = (gettime() - tm[tmi]);
@@ -409,7 +406,7 @@ int main( int argc, char *argv[] )
 					sprintf(spd, "%.1f KB/s (last %ds)", now_speed, lastdt);
 					// remaining time
 					double effective_speed = avg_speed * 0.4 + now_speed * 0.6;
-					int remaining_time = ((double)axel->size / 1024) / effective_speed;
+					int remaining_time = ((double)(axel->size - axel->bytes_done) / 1024) / effective_speed;
 					my_human_time(remt, remaining_time);
 				}
 
@@ -432,46 +429,13 @@ int main( int argc, char *argv[] )
 			}
 			fflush( stdout );
 		}
-		
-		if( axel->message )
-		{
-			if(conf->alternate_output==1)
-			{
-				/* clreol-simulation */
-				putchar( '\r' );
-				for( i = 0; i < 79; i++ ) /* linewidth known? */
-					putchar( ' ' );
-				putchar( '\r' );
-			}
-			else
-			{
-				putchar( '\n' );
-			}
-			print_messages( axel );
-			if( !axel->ready )
-			{
-				if(conf->alternate_output!=1)
-					print_commas( axel->bytes_done );
-				else
-					print_alternate_output(axel);
-			}
-		}
-		else if( axel->ready )
-		{
-			putchar( '\n' );
-		}
 	}
-	
-	strcpy( string + MAX_STRING / 2,
-		size_human( axel->bytes_done - axel->start_byte ) );
-	
-	printf( _("\nDownloaded %s in %s. (%.2f KB/s)\n"),
-		string + MAX_STRING / 2,
-		time_human( gettime() - axel->start_time ),
-		(double) axel->bytes_per_second / 1024 );
-	
-	i = axel->ready ? 0 : 2;
-	
+
+	if (axel->ready) // download finished
+		i = 42;
+	else // download interrupted
+		i = 2;
+		
 	axel_close( axel );
 	
 	return( i );
@@ -481,21 +445,6 @@ int main( int argc, char *argv[] )
 void stop( int signal )
 {
 	run = 0;
-}
-
-/* Convert a number of bytes to a human-readable form			*/
-char *size_human( long long int value )
-{
-	if( value == 1 )
-		sprintf( string, _("%lld B"), value );
-	else if( value < 1024 )
-		sprintf( string, _("%lld B"), value );
-	else if( value < 10485760 )
-		sprintf( string, _("%.1f KB"), (float) value / 1024 );
-	else
-		sprintf( string, _("%.1f MB"), (float) value / 1048576 );
-	
-	return( string );
 }
 
 // by mjnaderi
@@ -519,21 +468,6 @@ void my_human_time(char *buf, int t)
 	sprintf(buf, "%.2d:%.2d:%.2d", t, m, s);
 }
 
-/* Convert a number of seconds to a human-readable form			*/
-char *time_human( int value )
-{
-	if( value == 1 )
-		sprintf( string, _("%i second"), value );
-	else if( value < 60 )
-		sprintf( string, _("%i seconds"), value );
-	else if( value < 3600 )
-		sprintf( string, _("%i:%02i seconds"), value / 60, value % 60 );
-	else
-		sprintf( string, _("%i:%02i:%02i seconds"), value / 3600, ( value / 60 ) % 60, value % 60 );
-	
-	return( string );
-}
-
 /* Part of the infamous wget-like interface. Just put it in a function
 	because I need it quite often..					*/
 void print_commas( long long int bytes_done )
@@ -549,60 +483,6 @@ void print_commas( long long int bytes_done )
 			putchar( ' ' );
 		putchar( ',' );
 	}
-	fflush( stdout );
-}
-
-static void print_alternate_output(axel_t *axel) 
-{
-	long long int done=axel->bytes_done;
-	long long int total=axel->size;
-	int i,j=0;
-	double now = gettime();
-	
-	printf("\r[%3ld%%] [", min(100,(long)(done*100./total+.5) ) );
-		
-	for(i=0;i<axel->conf->num_connections;i++)
-	{
-		for(;j<((double)axel->conn[i].currentbyte/(total+1)*50)-1;j++)
-			putchar('.');
-
-		if(axel->conn[i].currentbyte<axel->conn[i].lastbyte)
-		{
-			if(now <= axel->conn[i].last_transfer + axel->conf->connection_timeout/2 )
-				putchar(i+'0');
-			else
-				putchar('#');
-		} else 
-			putchar('.');
-
-		j++;
-		
-		for(;j<((double)axel->conn[i].lastbyte/(total+1)*50);j++)
-			putchar(' ');
-	}
-	
-	if(axel->bytes_per_second > 1048576)
-		printf( "] [%6.1fMB/s]", (double) axel->bytes_per_second / (1024*1024) );
-	else if(axel->bytes_per_second > 1024)
-		printf( "] [%6.1fKB/s]", (double) axel->bytes_per_second / 1024 );
-	else
-		printf( "] [%6.1fB/s]", (double) axel->bytes_per_second );
-	
-	if(done<total)
-	{
-		int seconds,minutes,hours,days;
-		seconds=axel->finish_time - now;
-		minutes=seconds/60;seconds-=minutes*60;
-		hours=minutes/60;minutes-=hours*60;
-		days=hours/24;hours-=days*24;
-		if(days)
-			printf(" [%2dd%2d]",days,hours);
-		else if(hours)
-			printf(" [%2dh%02d]",hours,minutes);
-		else
-			printf(" [%02d:%02d]",minutes,seconds);
-	}
-	
 	fflush( stdout );
 }
 
