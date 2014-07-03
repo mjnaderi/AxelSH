@@ -28,6 +28,7 @@
 static void stop( int signal );
 static char *size_human( long long int value );
 static void my_human_time(char*, int);
+static void my_human_size(char*, long long);
 static char *time_human( int value );
 static void print_commas( long long int bytes_done );
 static void print_alternate_output( axel_t *axel );
@@ -389,7 +390,7 @@ int main( int argc, char *argv[] )
 			if( prev >= 1024 ){
 				
 				char dl[30];
-				strcpy(dl, size_human(axel->bytes_done));
+				my_human_size(dl, axel->bytes_done);
 
 				double avg_speed = (double) axel->bytes_per_second / 1024;
 
@@ -495,6 +496,17 @@ char *size_human( long long int value )
 		sprintf( string, _("%.1f MB"), (float) value / 1048576 );
 	
 	return( string );
+}
+
+// by mjnaderi
+void my_human_size(char *buf, long long size)
+{
+	if (size < 1024)
+		sprintf(buf, "%lld B", size);
+	else if (size < 1024*1024)
+		sprintf(buf, "%.1f KB", (double)size/1024);
+	else
+		sprintf(buf, "%.1f MB", (double)size/(1024*1024));
 }
 
 // by mjnaderi
