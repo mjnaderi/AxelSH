@@ -27,6 +27,7 @@
 
 static void stop( int signal );
 static char *size_human( long long int value );
+static void my_human_time(char*, int);
 static char *time_human( int value );
 static void print_commas( long long int bytes_done );
 static void print_alternate_output( axel_t *axel );
@@ -346,55 +347,89 @@ int main( int argc, char *argv[] )
 	/* Install save_state signal handler for resuming support	*/
 	signal( SIGINT, stop );
 	signal( SIGTERM, stop );
+
+	char total_size[20];
+	strcpy(total_size, size_human(axel->size));
+
+	int tm[300], pr[300];
+	int tmi = 0;
+	char tmfull = 0;
+
 	
 	while( !axel->ready && run )
 	{
 		long long int prev, done;
 		
 		prev = axel->bytes_done;
+		if ( ! tmfull && tmi == 299)
+			tmfull = 1;
+		tm[tmi] = gettime();
+		pr[tmi] = prev;
+		tmi = (tmi+1)%300;
+
 		axel_do( axel );
 
-		if( conf->alternate_output )
-		{			
-			if( !axel->message && prev != axel->bytes_done )
-				print_alternate_output( axel );
-		}
-		else
+		done = ( axel->bytes_done / 1024 ) - ( prev / 1024 );
+
+		if( done && tmi%10 == 0 )
 		{
-			/* The infamous wget-like 'interface'.. ;)		*/
-			done = ( axel->bytes_done / 1024 ) - ( prev / 1024 );
-			if( done && conf->verbose > -1 )
-			{
-				for( i = 0; i < done; i ++ )
-				{
-					i += ( prev / 1024 );
-					if( ( i % 50 ) == 0 )
-					{
-						double percentage;
-						long long intpercentage;
-						if( axel->size < 10240000 ){
-							intpercentage = min( 100, 102400 * i / axel->size );
-							percentage = min( 100, (double)102400 * i / axel->size );
-							printf( "\n%lld\n", intpercentage );
-						}
-						else
-						{
-							intpercentage = min( 100, i / ( axel->size / 102400 ) );
-							percentage = min( 100, (double)i / ( axel->size / 102400 ) );
-							printf( "\n%lld\n", intpercentage );
-						}
-						if( prev >= 1024 )
-							printf( "\n#Downloading %s\\nSpeed:\\t\\t%.1fKB/s\\nProgress:\\t%.2f%%\n",axel->filename, (double) axel->bytes_per_second / 1024, percentage );
-					}
-					else if( ( i % 10 ) == 0 )
-					{
-						//putchar( ' ' );
-					}
-					//putchar( '.' );
-					i -= ( prev / 1024 );
-				}
-				fflush( stdout );
+			double percentage;
+			long long intpercentage;
+			if( axel->size < 10240000 ){
+				intpercentage = min( 100, 100 * axel->bytes_done / axel->size );
+				percentage = min( 100, (double)100 * axel->bytes_done / axel->size );
 			}
+			else
+			{
+				intpercentage = min( 100, axel->bytes_done / ( axel->size / 100 ) );
+				percentage = min( 100, (double)(axel->bytes_done) / ( axel->size / 100 ) );
+			}
+			printf( "\n%lld\n", intpercentage );
+			
+			if( prev >= 1024 ){
+				
+				char dl[30];
+				strcpy(dl, size_human(axel->bytes_done));
+
+				double avg_speed = (double) axel->bytes_per_second / 1024;
+
+				// elapsed time
+				int dt = gettime() - axel->start_time;
+				char elt[30];
+				my_human_time(elt, dt);
+
+				// remaining time
+				char remt[30] = "--";
+				char spd[40] = "--";
+				if (tmfull){
+					// now_speed
+					int lastdt = (gettime() - tm[tmi]);
+					double now_speed = (double)(axel->bytes_done - pr[tmi]) / lastdt / 1024.0;
+					sprintf(spd, "%.1f KB/s (last %ds)", now_speed, lastdt);
+					// remaining time
+					double effective_speed = avg_speed * 0.4 + now_speed * 0.6;
+					int remaining_time = ((double)axel->size / 1024) / effective_speed;
+					my_human_time(remt, remaining_time);
+				}
+
+				printf(
+					"\n#File:\\t\\t\\t\\t%s\\n"
+					"Downloaded:\\t\\t%s / %s\\n"
+					"Elapsed Time:\\t\\t%s\\n"
+					"Remaining Time:\\t%s\\n"
+					"Average Speed:\\t\\t%.1f KB/s\\n"
+					"Speed:\\t\\t\\t\\t%s\\n"
+					"Progress:\\t\\t\\t%.2f%%\n",
+					axel->filename,
+					dl, total_size,
+					elt,
+					remt,
+					avg_speed,
+					spd,
+					percentage
+				);
+			}
+			fflush( stdout );
 		}
 		
 		if( axel->message )
@@ -451,15 +486,25 @@ void stop( int signal )
 char *size_human( long long int value )
 {
 	if( value == 1 )
-		sprintf( string, _("%lld byte"), value );
+		sprintf( string, _("%lld B"), value );
 	else if( value < 1024 )
-		sprintf( string, _("%lld bytes"), value );
+		sprintf( string, _("%lld B"), value );
 	else if( value < 10485760 )
-		sprintf( string, _("%.1f kilobytes"), (float) value / 1024 );
+		sprintf( string, _("%.1f KB"), (float) value / 1024 );
 	else
-		sprintf( string, _("%.1f megabytes"), (float) value / 1048576 );
+		sprintf( string, _("%.1f MB"), (float) value / 1048576 );
 	
 	return( string );
+}
+
+// by mjnaderi
+void my_human_time(char *buf, int t)
+{
+	int s = t % 60;
+	t /= 60;
+	int m = t%60;
+	t /= 60;
+	sprintf(buf, "%.2d:%.2d:%.2d", t, m, s);
 }
 
 /* Convert a number of seconds to a human-readable form			*/
