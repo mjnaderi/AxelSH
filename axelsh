@@ -5,6 +5,11 @@
 
 trap "exit 1" SIGINT SIGTERM
 
+if ! [ -f "./axel/axel" ]; then
+	zenity --error --text="Axel Not Found in \"./axel/axel\". Maybe you have not compiled it yet..." &>/dev/null &
+	exit 10
+fi
+
 NOTIFY=true # notify about finishing downloads or not
 LINKS_FILE=$1
 DONE_FILE=$2
