@@ -28,7 +28,6 @@
 static void stop( int signal );
 static void my_human_time(char*, int);
 static void my_human_size(char*, long long);
-static void print_commas( long long int bytes_done );
 static void print_help();
 static void print_version();
 static void print_messages( axel_t *axel );
@@ -328,18 +327,18 @@ int main( int argc, char *argv[] )
 	axel_start( axel );
 	print_messages( axel );
 
-	if( conf->alternate_output )
+	/*if( conf->alternate_output )
 	{
 		putchar('\n');
 	} 
 	else
 	{
-		if( axel->bytes_done > 0 )	/* Print first dots if resuming	*/
+		if( axel->bytes_done > 0 )
 		{
 			putchar( '\n' );
 			print_commas( axel->bytes_done );
 		}
-	}
+	}*/
 	axel->start_byte = axel->bytes_done;
 	
 	/* Install save_state signal handler for resuming support	*/
@@ -384,49 +383,53 @@ int main( int argc, char *argv[] )
 				intpercentage = min( 100, axel->bytes_done / ( axel->size / 100 ) );
 				percentage = min( 100, (double)(axel->bytes_done) / ( axel->size / 100 ) );
 			}
-			printf( "\n%lld\n", intpercentage );
+			//printf( "\n%lld\n", intpercentage );
 			
-			if( prev >= 1024 ){
 				
-				my_human_size(dl, axel->bytes_done);
+			my_human_size(dl, axel->bytes_done);
 
-				double avg_speed = (double) axel->bytes_per_second / 1024;
+			double avg_speed = (double) axel->bytes_per_second / 1024;
 
-				// elapsed time
-				int dt = gettime() - axel->start_time;
-				my_human_time(elt, dt);
+			// elapsed time
+			int dt = gettime() - axel->start_time;
+			my_human_time(elt, dt);
 
+			// remaining time
+			strcpy(remt, "--");
+			strcpy(spd, "--");
+			if (tmfull){
+				// now_speed
+				int lastdt = (gettime() - tm[tmi]);
+				double now_speed = (double)(axel->bytes_done - pr[tmi]) / lastdt / 1024.0;
+				sprintf(spd, "%.1f KB/s (last %ds)", now_speed, lastdt);
 				// remaining time
-				strcpy(remt, "--");
-				strcpy(spd, "--");
-				if (tmfull){
-					// now_speed
-					int lastdt = (gettime() - tm[tmi]);
-					double now_speed = (double)(axel->bytes_done - pr[tmi]) / lastdt / 1024.0;
-					sprintf(spd, "%.1f KB/s (last %ds)", now_speed, lastdt);
-					// remaining time
-					double effective_speed = avg_speed * 0.4 + now_speed * 0.6;
-					int remaining_time = ((double)(axel->size - axel->bytes_done) / 1024) / effective_speed;
-					my_human_time(remt, remaining_time);
-				}
-
-				printf(
-					"\n#File:\\t\\t\\t\\t%s\\n"
-					"Downloaded:\\t\\t%s / %s\\n"
-					"Elapsed Time:\\t\\t%s\\n"
-					"Remaining Time:\\t%s\\n"
-					"Average Speed:\\t\\t%.1f KB/s\\n"
-					"Speed:\\t\\t\\t\\t%s\\n"
-					"Progress:\\t\\t\\t%.2f%%\n",
-					axel->filename,
-					dl, total_size,
-					elt,
-					remt,
-					avg_speed,
-					spd,
-					percentage
-				);
+				double effective_speed = avg_speed * 0.7 + now_speed * 0.3;
+				int remaining_time = ((double)(axel->size - axel->bytes_done) / 1024) / effective_speed;
+				my_human_time(remt, remaining_time);
 			}
+
+			
+			printf(
+				"XXX\n"
+				"%lld\n"
+				"Downloading File:\n%s\n\n"
+				"Downloaded:      %s / %s\n"
+				"Elapsed Time:    %s\n"
+				"Remaining Time:  %s\n"
+				"Average Speed:   %.1f KB/s\n"
+				"Speed:           %s\n"
+				"Progress:        %.2f%%\n"
+				"XXX\n",
+				intpercentage,
+				axel->filename,
+				dl, total_size,
+				elt,
+				remt,
+				avg_speed,
+				spd,
+				percentage
+			);
+
 			fflush( stdout );
 		}
 	}
@@ -466,24 +469,6 @@ void my_human_time(char *buf, int t)
 	int m = t%60;
 	t /= 60;
 	sprintf(buf, "%.2d:%.2d:%.2d", t, m, s);
-}
-
-/* Part of the infamous wget-like interface. Just put it in a function
-	because I need it quite often..					*/
-void print_commas( long long int bytes_done )
-{
-	int i, j;
-	
-	printf( "       " );
-	j = ( bytes_done / 1024 ) % 50;
-	if( j == 0 ) j = 50;
-	for( i = 0; i < j; i ++ )
-	{
-		if( ( i % 10 ) == 0 )
-			putchar( ' ' );
-		putchar( ',' );
-	}
-	fflush( stdout );
 }
 
 void print_help()

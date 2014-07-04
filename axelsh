@@ -1,19 +1,20 @@
 #!/bin/bash
 # AxelSH
 # By Mohammad Javad Naderi <mjnaderi@gmail.com>
-# usage: ./axelsh LINKS_FILE DONE_FILE OUTPUT_FOLDER
+# usage: ./axelsh LINKS_FILE OUTPUT_FOLDER
 
 trap "exit 1" SIGINT SIGTERM
 
 if ! [ -f "./axel/axel" ]; then
-	zenity --error --text="Axel Not Found in \"./axel/axel\". Maybe you have not compiled it yet..." &>/dev/null &
+	echo "Axel Not Found in \"./axel/axel\". Maybe you have not compiled it yet..."
 	exit 10
 fi
 
-NOTIFY=true # notify about finishing downloads or not
 LINKS_FILE=$1
-DONE_FILE=$2
-OUT=$3
+OUT=$2
+
+NOTIFY=true # notify about finishing downloads or not
+AXELDIR="./axel"
 
 # functions mk_dlg and parge_dlg from http://www.pclinuxos.com/forum/index.php?topic=59050.0
 function mk_dlg()
@@ -55,45 +56,54 @@ function parse_dlg() {
 
 
 # Main
-(
-	(
-		# Main Loop
-	 	while [ `wc -c "$LINKS_FILE" | awk '{print $1}'` != "0" ]; do
-			link=`head -1 "$LINKS_FILE"`
+# Main Loop
+while [ `wc -c "$LINKS_FILE" | awk '{print $1}'` != "0" ]; do
+	link=`head -1 "$LINKS_FILE"`
 
-			if [ "$link" == "" ]; then
-				# remove first line from LINKS_FILE
-				tail -n +2 "$LINKS_FILE" > axeltmp && mv axeltmp "$LINKS_FILE"
-				continue
-			fi
+	if [ "$link" == "" ]; then
+		# remove first line from LINKS_FILE
+		tail -n +2 "$LINKS_FILE" > axeltmp && mv axeltmp "$LINKS_FILE"
+		continue
+	fi
 
-			./axel/axel "$link" -o "$OUT"
+	$AXELDIR/axel "$link" -o "$OUT" | dialog --no-mouse --no-collapse --title "AxelSH" --gauge "Please Wait" 16 70 0
+	EC="${PIPESTATUS[0]}"
 
-			# if no st file exists (means download finished)
-			# TODO: better check
-			if ! ls "$OUT/*.st" &>/dev/null; then
-				# remove first line of LINKS_FILE
-				tail -n +2 "$LINKS_FILE" > axeltmp && mv axeltmp "$LINKS_FILE"
-				# add link to DONE_FILE file
-				echo "$link" >> "$DONE_FILE"
 
-				if $NOTIFY; then
-					# You can uncomment this line to also use notify-send for notification
-					#notify-send -t 5000 "Download of $link Finished!"
-					(
-						mk_dlg 2 "AxelSH: Download Finished" "Download of $link Finished!" "Open Folder" open "OK" ok
-						ans=`parse_dlg`
-						if [ $ans == "open" ]; then
-							xdg-open $OUT
-						fi
-					) &>/dev/null &
+	# if download finished
+	if [ "$EC" == 42 ]; then
+		# add link to done files
+		echo "$link" >> "${LINKS_FILE}.done"
+		if $NOTIFY; then
+			# You can uncomment this line to also use notify-send for notification
+			#notify-send -t 5000 "Download of $link Finished!"
+			(
+				mk_dlg 2 "AxelSH: Download Finished" "Download of $link Finished!" "Open Folder" open "OK" ok
+				ans=`parse_dlg`
+				if [ $ans == "open" ]; then
+					xdg-open $OUT
 				fi
-			fi
-		done
-		echo "#Downloads Finished"
-		echo "100"
-	) & echo $!
-) | (
-	read PIPED_PID;
-	zenity --progress --title="AxelSH" &>/dev/null || kill $PIPED_PID
-) &>/dev/null &
+			) &>/dev/null &
+		fi
+	# else if download failed
+	else
+		# add link to failed files
+		echo "$link" >> "${LINKS_FILE}.failed"
+		if $NOTIFY; then
+			# You can uncomment this line to also use notify-send for notification
+			#notify-send -t 5000 "Download of $link Finished!"
+			(
+				mk_dlg 2 "AxelSH: Download Failed" "Download of $link failed! Maybe it is already downloaded. Or the download is interrupted" "Open Folder" open "OK" ok
+				ans=`parse_dlg`
+				if [ $ans == "open" ]; then
+					xdg-open $OUT
+				fi
+			) &>/dev/null &
+		fi
+	fi
+
+	# remove first line of LINKS_FILE
+	tail -n +2 "$LINKS_FILE" > axeltmp && mv axeltmp "$LINKS_FILE"
+
+done
+echo -e "\nDownloads Finished"

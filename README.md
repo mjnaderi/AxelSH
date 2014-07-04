@@ -2,11 +2,11 @@
 
 My simple download manager for linux!
 
-Uses `axel` for downloading and accelerating downloads. Uses `zenity` and `gtkdialog` for GUI dialogs.
+Uses `axel` for downloading and accelerating downloads. Uses `dialog` and `gtkdialog`.
 
 ## Requirements
 
-AxelSH needs `zenity` and `gtkdialog` packages.
+AxelSH needs `dialog` and `gtkdialog` packages.
 
 Before start, you need to compile my modified version of `axel`:
 
@@ -22,16 +22,16 @@ Put download links in a file (one per line), and give the path to that file as a
 
 ```bash
 # Usage:
-axelsh LINKS_FILE FINISHED_LINKS_FILE OUTPUT_PATH
+axelsh  LINKS_FILE  OUTPUT_PATH
 ```
 
-The following command, picks a link from `links` and downloads it to `~/Downloads`, and moves that link from `links` to `finished_links`, and repeats this for all links in `links`.
+The following command, picks links from `links` and downloads them to `~/Downloads`. Writes links of finished downloads to `links.done` and writes links of failed downloads to `links.failed`.
 
 ```bash
-./axelsh links finished_links ~/Downloads
+./axelsh links ~/Downloads
 ```
 
-You can cancel the download and resume it later by running the same command.
+You can cancel the download, and resume it later by running the same command.
 
 ## License
 GNU GPL v3
