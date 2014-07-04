@@ -327,18 +327,6 @@ int main( int argc, char *argv[] )
 	axel_start( axel );
 	print_messages( axel );
 
-	/*if( conf->alternate_output )
-	{
-		putchar('\n');
-	} 
-	else
-	{
-		if( axel->bytes_done > 0 )
-		{
-			putchar( '\n' );
-			print_commas( axel->bytes_done );
-		}
-	}*/
 	axel->start_byte = axel->bytes_done;
 	
 	/* Install save_state signal handler for resuming support	*/
@@ -438,9 +426,9 @@ int main( int argc, char *argv[] )
 		i = 42;
 	else // download interrupted
 		i = 2;
-		
+
 	axel_close( axel );
-	
+
 	return( i );
 }
 
