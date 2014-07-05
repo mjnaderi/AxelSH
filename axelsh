@@ -1,20 +1,32 @@
 #!/bin/bash
 # AxelSH
 # By Mohammad Javad Naderi <mjnaderi@gmail.com>
-# usage: ./axelsh LINKS_FILE OUTPUT_FOLDER
+# usage: axelsh LINKS_FILE OUTPUT_FOLDER
+#     or axelsh -s LINK
 
 trap "exit 1" SIGINT SIGTERM
 
-if ! [ -f "./axel/axel" ]; then
-	echo "Axel Not Found in \"./axel/axel\". Maybe you have not compiled it yet..."
-	exit 10
+#if ! [ -f "./axel/axel" ]; then
+#	echo "Axel Not Found in \"./axel/axel\". Maybe you have not compiled it yet..."
+#	exit 10
+#fi
+if [ "$1" = "-s" ]; then
+	link="$2"
+	axelshcmd "$link" | dialog --no-mouse --no-collapse --title "AxelSH" --gauge "Please Wait" 16 70 0
+	EC="${PIPESTATUS[0]}"
+	if [ "$EC" == 42 ]; then
+		echo "Download Finished"
+		exit 0
+	else
+		echo "Download Failed"
+		exit 1
+	fi
 fi
 
 LINKS_FILE=$1
 OUT=$2
 
 NOTIFY=true # notify about finishing downloads or not
-AXELDIR="./axel"
 
 # functions mk_dlg and parge_dlg from http://www.pclinuxos.com/forum/index.php?topic=59050.0
 function mk_dlg()
@@ -66,7 +78,7 @@ while [ `wc -c "$LINKS_FILE" | awk '{print $1}'` != "0" ]; do
 		continue
 	fi
 
-	$AXELDIR/axel "$link" -o "$OUT" | dialog --no-mouse --no-collapse --title "AxelSH" --gauge "Please Wait" 16 70 0
+	axelshcmd "$link" -o "$OUT" | dialog --no-mouse --no-collapse --title "AxelSH" --gauge "Please Wait" 16 70 0
 	EC="${PIPESTATUS[0]}"
 
 

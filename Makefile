@@ -62,6 +62,7 @@ endif
 install-bin:
 	mkdir -p $(DESTDIR)$(BINDIR)/
 	cp $(OUTFILE) $(DESTDIR)$(BINDIR)/$(OUTFILE)
+	cp axelsh     $(DESTDIR)$(BINDIR)/axelsh
 
 uninstall-bin:
 	rm -f $(BINDIR)/$(OUTFILE)

@@ -69,7 +69,7 @@ SHAREDIR=$sharedir
 MANDIR=$mandir
 LOCALE=$locale
 
-OUTFILE=axel
+OUTFILE=axelshcmd
 ARCH=$arch
 
 DESTDIR=
