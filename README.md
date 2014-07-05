@@ -35,4 +35,4 @@ axelsh links ~/Downloads
 You can cancel the download, and resume it later by running the same command.
 
 ## License
-GNU GPL v3
+GNU GPL v2
