@@ -1,10 +1,8 @@
 # AxelSH
 
-My simple download manager for linux!
+AxelSH is a fork of `axel`, a lightweight download accelerator for Linux. It uses `dialog` and `gtkdialog` for UI parts.
 
 ![AxelSH](/axelsh.png)
-
-Uses `axel` for downloading and accelerating downloads. Uses `dialog` and `gtkdialog`.
 
 ## Installation
 
