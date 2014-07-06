@@ -2,6 +2,8 @@
 
 My simple download manager for linux!
 
+![AxelSH](/axelsh.png)
+
 Uses `axel` for downloading and accelerating downloads. Uses `dialog` and `gtkdialog`.
 
 ## Installation
