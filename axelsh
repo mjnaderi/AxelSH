@@ -1,8 +1,8 @@
 #!/bin/bash
 # AxelSH
 # By Mohammad Javad Naderi <mjnaderi@gmail.com>
-# usage: axelsh LINKS_FILE OUTPUT_FOLDER
-#     or axelsh -s LINK
+# usage: axelsh LINKS_FILE OUTPUT_DIR
+#     or axelsh -s LINK [OUTPUT_DIR]
 
 trap "exit 1" SIGINT SIGTERM
 
@@ -12,7 +12,10 @@ trap "exit 1" SIGINT SIGTERM
 #fi
 if [ "$1" = "-s" ]; then
 	link="$2"
-	axelshcmd "$link" | dialog --no-mouse --no-collapse --title "AxelSH" --gauge "Please Wait" 16 70 0
+	if [ "$3" != "" ]; then
+		OUT="$3"
+	fi
+	axelshcmd "$link" -o "$OUT" | dialog --no-mouse --no-collapse --title "AxelSH" --gauge "Please Wait" 16 70 0
 	EC="${PIPESTATUS[0]}"
 	if [ "$EC" == 42 ]; then
 		echo "Download Finished"

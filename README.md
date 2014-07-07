@@ -20,10 +20,10 @@ Put download links in a file (one per line), and give the path to that file as a
 
 ```bash
 # Usage:
-axelsh  LINKS_FILE  OUTPUT_PATH
+axelsh  LINKS_FILE  OUTPUT_DIR
 
 # or download a single file in current directory
-axelsh -s LINK
+axelsh -s LINK  [OUTPUT_DIR]
 ```
 
 The following command, picks links from `links` and downloads them to `~/Downloads`. Writes links of finished downloads to `links.done` and writes links of failed downloads to `links.failed`.
