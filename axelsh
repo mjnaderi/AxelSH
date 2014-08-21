@@ -89,7 +89,7 @@ while [ `wc -c "$LINKS_FILE" | awk '{print $1}'` != "0" ]; do
 		continue
 	fi
 
-	axelshcmd "$speed" "$link" -o "$OUT" | dialog --no-mouse --no-collapse --title "AxelSH" --gauge "Please Wait" 16 70 0
+	axelshcmd "$link" -o "$OUT" "$speed" | dialog --no-mouse --no-collapse --title "AxelSH" --gauge "Please Wait" 16 70 0
 	EC="${PIPESTATUS[0]}"
 
 
